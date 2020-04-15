@@ -280,24 +280,21 @@ class SPS_Package:
 
     @property
     def assets(self):
-        xpaths = (
-            '//graphic[@xlink:href]',
-            '//media[@xlink:href]',
-            '//inline-graphic[@xlink:href]',
-            '//supplementary-material[@xlink:href]',
-            '//inline-supplementary-material[@xlink:href]',
+        xpath = (
+            './/graphic[@xlink:href]'
+            ' | .//media[@xlink:href]'
+            ' | .//inline-graphic[@xlink:href]'
+            ' | .//supplementary-material[@xlink:href]'
+            ' | .//inline-supplementary-material[@xlink:href]'
         )
         items = []
-        for xpath in xpaths:
-            for node in self.xmltree.findall(
-                    xpath,
-                    namespaces={"xlink": "http://www.w3.org/1999/xlink"}):
-                href = node.get("{http://www.w3.org/1999/xlink}href")
-                if ":" not in href and "/" not in href:
-                    name, ext = os.path.splitext(href)
-                    if not ext:
-                        href += '.jpg'
-                    items.append(href)
+        for node in self.xmltree.iterfind(
+            xpath, namespaces={"xlink": "http://www.w3.org/1999/xlink"}
+        ):
+            href = node.get("{http://www.w3.org/1999/xlink}href")
+            if ":" not in href and "/" not in href:
+                name, ext = os.path.splitext(href)
+                items.append(href)
         return items
 
     @property
