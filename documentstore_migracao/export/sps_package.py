@@ -281,14 +281,14 @@ class SPS_Package:
     @property
     def assets(self):
         xpath = (
-            './/graphic[@xlink:href]'
-            ' | .//media[@xlink:href]'
-            ' | .//inline-graphic[@xlink:href]'
-            ' | .//supplementary-material[@xlink:href]'
-            ' | .//inline-supplementary-material[@xlink:href]'
+            '//graphic[@xlink:href]'
+            ' | //media[@xlink:href]'
+            ' | //inline-graphic[@xlink:href]'
+            ' | //supplementary-material[@xlink:href]'
+            ' | //inline-supplementary-material[@xlink:href]'
         )
         items = []
-        for node in self.xmltree.iterfind(
+        for node in self.xmltree.xpath(
             xpath, namespaces={"xlink": "http://www.w3.org/1999/xlink"}
         ):
             href = node.get("{http://www.w3.org/1999/xlink}href")

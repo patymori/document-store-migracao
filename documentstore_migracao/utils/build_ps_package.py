@@ -158,6 +158,7 @@ class BuildPSPackage(object):
         """
         obj_xmltree = xml.loadToXML(xml_target_path)
 
+        logger.debug('Updating XML "%s" with CSV info', xml_target_path)
         sps_package = self._update_sps_package_obj(
             SPS_Package(obj_xmltree), pack_name, row
         )
@@ -168,7 +169,6 @@ class BuildPSPackage(object):
 
     def get_target_path(self, xml_relative_path):
         target_folder, ext = os.path.splitext(xml_relative_path)
-        logger.info("Make dir package: %s", target_folder)
         target_path = os.path.join(self.out_folder, target_folder)
         if os.path.isdir(target_path):
             for f in os.listdir(target_path):
@@ -197,19 +197,22 @@ class BuildPSPackage(object):
                 (lang + "_" + pack_name + ".pdf",
                     pack_name + "-" + lang + ".pdf"))
         for source, dest in renditions_files:
+            logger.debug('Collecting PDF "%s" for XML "%s.xml"', source, pack_name)
             try:
                 shutil.copy(os.path.join(source_path, source), target_path)
             except FileNotFoundError:
-                logger.exception("Not found %s" % source)
+                logger.error(
+                    'Error collecting rendition "%s" for XML "%s.xml"',
+                    source,
+                    pack_name,
+                )
             else:
                 renditions.append(dest)
         return list(zip(langs, renditions))
 
     def save_renditions_manifest(self, target_path, metadata):
         if len(metadata) > 0:
-            logger.info(
-                "Saving %s/manifest.json", target_path
-            )
+            logger.debug("Saving %s/manifest.json", target_path)
             _renditions_manifest_path = path.join(
                 target_path,
                 "manifest.json",
@@ -224,7 +227,9 @@ class BuildPSPackage(object):
         with os.scandir(source_path) as it:
             for entry in it:
                 if entry.is_file() and entry.name.startswith(filename_root):
-                    logger.debug("File found: %s", entry.name)
+                    logger.debug(
+                        'Found alternative "%s" for asset "%s"', entry.name, img_filename
+                    )
                     shutil.copy(os.path.join(source_path, entry.name), target_path)
                     filenames_to_update.append(entry.name)
         return filenames_to_update
@@ -262,13 +267,33 @@ class BuildPSPackage(object):
         # Salva XML com alterações
         xml.objXML2file(xml_target_path, _xmltree, pretty=True)
 
-    def collect_assets(self, target_path, acron, issue_folder, pack_name, images):
+    # def collect_assets(self, target_path, acron, issue_folder, pack_name, images):
+    def collect_assets(
+        self, target_path, acron, issue_folder, pack_name, sps_package, xml_target_path
+    ):
+        assets_alternatives = {}
         source_path = os.path.join(self.img_folder, acron, issue_folder)
-        for img in set(images):
+        # for img in set(images):
+        for img in set(sps_package.assets):
+            logger.debug(
+                'Collection asset "%s" from %s into %s', img, source_path, target_path
+            )
             try:
                 shutil.copy(os.path.join(source_path, img), target_path)
             except FileNotFoundError:
-                logger.exception("Not found %s" % img)
+                logger.error(
+                    'Asset "%s" not found in %s to pack "%s"',
+                    img,
+                    source_path,
+                    target_path,
+                )
+                alternatives = self.collect_asset_alternatives(
+                    img, source_path, target_path
+                )
+                if len(alternatives) > 0:
+                    assets_alternatives[img] = alternatives
+        if len(assets_alternatives) > 0:
+            self.update_xml_with_alternatives(assets_alternatives, sps_package, xml_target_path)
 
     def optimise_xml_to_web(self, target_path, xml_target_path):
         def read_file(filename):
@@ -344,14 +369,12 @@ class BuildPSPackage(object):
                 f_pid, f_pid_aop, f_file, f_dt_collection, f_dt_created, f_dt_updated = row.values()
 
                 xml_relative_path = f_file
-                logger.info("Process ID: %s" % f_pid)
-                logger.info("Process XML: %s" % xml_relative_path)
                 target_path = self.get_target_path(xml_relative_path)
-                logger.info("Package: %s" % target_path)
+                logger.debug("Processing ID: %s, XML: %s, Package: %s", f_pid, xml_relative_path, target_path)
                 try:
                     xml_target_path = self.collect_xml(xml_relative_path, target_path)
                 except FileNotFoundError as e:
-                    logger.exception(e)
+                    logger.error('Error collecting XML "%s": %s', xml_relative_path, e)
                 else:
                     acron, issue_folder, pack_name = self.get_acron_issuefolder_packname(xml_relative_path)
 
@@ -364,8 +387,13 @@ class BuildPSPackage(object):
                     self.save_renditions_manifest(
                         target_path, dict(renditions))
                     self.collect_assets(
-                        target_path, acron, issue_folder, pack_name,
-                        xml_sps.assets)
+                        target_path,
+                        acron,
+                        issue_folder,
+                        pack_name,
+                        xml_sps,
+                        xml_target_path,
+                    )
                     self.optimise_xml_to_web(target_path, xml_target_path)
 
 
