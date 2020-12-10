@@ -134,7 +134,7 @@ def pack_article_ALLxml():
         )
 
 
-def get_asset(old_path, new_fname, dest_path):
+def get_asset(old_path, new_fname, dest_path, scielo_pid_v2):
     """Obtém os ativos digitais no sistema de arquivo e realiza a persistência
     no ``dest_path``.
 
@@ -142,6 +142,7 @@ def get_asset(old_path, new_fname, dest_path):
         old_path: Caminho do ativo
         new_fname: Novo nome para o ativo
         dest_path: Pasta de destino
+        scielo_pid_v2: PID v2 do documento que o ativo digital está referenciado
 
     Retornos:
         Sem retornos.
@@ -171,7 +172,7 @@ def get_asset(old_path, new_fname, dest_path):
             os.path.join(config.get('SOURCE_IMG_FILE'), asset_path),
             os.path.join(config.get('SOURCE_PDF_FILE'), asset_path),
         ]:
-            path = find_file(path)
+            path = find_file(path, scielo_pid_v2)
             if path:
                 break
         content = files.read_file_binary(path)
@@ -205,7 +206,7 @@ def packing_assets(asset_replacements, pkg_path, incomplete_pkg_path, pkg_name,
 
     for old_path, new_fname in asset_replacements:
         try:
-            get_asset(old_path, new_fname, pkg_path)
+            get_asset(old_path, new_fname, pkg_path, scielo_pid_v2)
         except AssetNotFoundError as e:
             logger.error(
                 "%s", {
@@ -235,7 +236,7 @@ def packing_assets(asset_replacements, pkg_path, incomplete_pkg_path, pkg_name,
     return pkg_path
 
 
-def find_file(file_path):
+def find_file(file_path, scielo_pid_v2):
     """
     A partir de um dado path, pega o nome de arquivo mais semelhante
     """
@@ -248,7 +249,14 @@ def find_file(file_path):
     else:
         found = case_insensitive_find(basename, files)
         if found:
-            return os.path.join(dirname, found)
+            found_file = os.path.join(dirname, found)
+            logger.debug(
+                '[%s] Found alternative "%s" for asset "%s"',
+                scielo_pid_v2,
+                found_file,
+                file_path,
+            )
+            return found_file
 
 
 def case_insensitive_find(word, words):
