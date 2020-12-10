@@ -2,6 +2,8 @@ import os
 import json
 import shutil
 import unittest
+import tempfile
+import pathlib
 from unittest.mock import patch, ANY, Mock
 
 from documentstore_migracao.processing import packing
@@ -169,7 +171,7 @@ class TestProcessingPackingGetAsset(unittest.TestCase):
         dest_path = TEMP_TEST_PATH
 
         self.assertFalse(os.path.isfile(self.dest_filename_img))
-        path = packing.get_asset(old_path, new_fname, dest_path)
+        path = packing.get_asset(old_path, new_fname, dest_path, "S0101-0101202000100")
         self.assertIsNone(path)
         with open(self.dest_filename_img) as fp:
             self.assertTrue(fp.read(), b"conteudo")
@@ -183,7 +185,7 @@ class TestProcessingPackingGetAsset(unittest.TestCase):
             dest_path = TEMP_TEST_PATH
 
             self.assertFalse(os.path.isfile(self.dest_filename_img))
-            packing.get_asset(old_path, new_fname, dest_path)
+            packing.get_asset(old_path, new_fname, dest_path, "S0101-0101202000100")
 
             img_new_path = os.path.join(dest_path, new_fname + ".jpg")
             self.assertTrue(os.path.exists(img_new_path))
@@ -197,7 +199,7 @@ class TestProcessingPackingGetAsset(unittest.TestCase):
             dest_path = TEMP_TEST_PATH
 
             self.assertFalse(os.path.isfile(self.dest_filename_pdf))
-            packing.get_asset(old_path, new_fname, dest_path)
+            packing.get_asset(old_path, new_fname, dest_path, "S0101-0101202000100")
 
             pdf_new_path = os.path.join(dest_path, new_fname + ".pdf")
             self.assertTrue(os.path.exists(pdf_new_path))
@@ -211,7 +213,7 @@ class TestProcessingPackingGetAsset(unittest.TestCase):
 
         self.assertFalse(os.path.isfile(self.dest_filename_img))
 
-        path = packing.get_asset(old_path, new_fname, dest_path)
+        path = packing.get_asset(old_path, new_fname, dest_path, "S0101-0101202000100")
 
         self.assertIsNone(path)
 
@@ -227,7 +229,7 @@ class TestProcessingPackingGetAsset(unittest.TestCase):
 
         self.assertFalse(os.path.isfile(self.dest_filename_img))
 
-        path = packing.get_asset(old_path, new_fname, dest_path)
+        path = packing.get_asset(old_path, new_fname, dest_path, "S0101-0101202000100")
 
         self.assertIsNone(path)
 
@@ -242,7 +244,7 @@ class TestProcessingPackingGetAsset(unittest.TestCase):
         dest_path = TEMP_TEST_PATH
 
         with self.assertRaises(packing.AssetNotFoundError):
-            packing.get_asset(old_path, new_fname, dest_path)
+            packing.get_asset(old_path, new_fname, dest_path, "S0101-0101202000100")
 
     def test_invalid_relative_URL_raises_error(self):
         """
@@ -250,7 +252,9 @@ class TestProcessingPackingGetAsset(unittest.TestCase):
         https://github.com/scieloorg/document-store-migracao/issues/158
         """
         with self.assertRaises(packing.AssetNotFoundError) as exc:
-            packing.get_asset("//www. [ <a href=", "novo", TEMP_TEST_PATH)
+            packing.get_asset(
+                "//www. [ <a href=", "novo", TEMP_TEST_PATH, "S0101-0101202000100"
+            )
         self.assertIn(
             "Not found",
             str(exc.exception)
@@ -379,28 +383,39 @@ class TestFindFile(unittest.TestCase):
         mock_listdir.return_value = [
             'a16tab02.gif', 'a18tab02m.gif', 'a18tab01.gif',
         ]
-        expected = "/tmp/a18tab02m.gif"
-        result = packing.find_file("/tmp/a18tab02M.gif")
-        self.assertEqual(expected, result)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            expected = os.path.join(temp_dir, "a18tab02m.gif")
+            result = packing.find_file(
+                os.path.join(temp_dir, "a18tab02M.gif"), "S0101-0101202000100"
+            )
+            self.assertEqual(expected, result)
 
     @patch("documentstore_migracao.processing.packing.os.listdir")
     def test_find_file_webannex(self, mock_listdir):
         mock_listdir.return_value = ["WEBANNEX.pdf"]
-        expected = "/tmp/WEBANNEX.pdf"
-        result = packing.find_file("/tmp/webannex.pdf")
-        self.assertEqual(expected, result)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            expected = os.path.join(temp_dir, "WEBANNEX.pdf")
+            result = packing.find_file(
+                os.path.join(temp_dir, "webannex.pdf"), "S0101-0101202000100"
+            )
+            self.assertEqual(expected, result)
 
     @patch("documentstore_migracao.processing.packing.os.listdir")
     def test_find_file_en_v32n1a05_1216_t1(self, mock_listdir):
         mock_listdir.return_value = ["en_v32n1a05_1216_t1.jpg"]
-        expected = "/tmp/en_v32n1a05_1216_t1.jpg"
-        result = packing.find_file("/tmp/en_v32n1a05_1216_t1.JPG")
-        self.assertEqual(expected, result)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            expected = os.path.join(temp_dir, "en_v32n1a05_1216_t1.jpg")
+            result = packing.find_file(
+                os.path.join(temp_dir, "en_v32n1a05_1216_t1.JPG"), "S0101-0101202000100"
+            )
+            self.assertEqual(expected, result)
 
     @patch("documentstore_migracao.processing.packing.os.listdir")
     def test_find_file_07t3(self, mock_listdir):
         mock_listdir.return_value = ["07t03.gif"]
         expected = None
-        result = packing.find_file("/tmp/07t3.gif")
-        self.assertEqual(expected, result)
-
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = packing.find_file(
+                os.path.join(temp_dir, "07t3.gif"), "S0101-0101202000100"
+            )
+            self.assertEqual(expected, result)
