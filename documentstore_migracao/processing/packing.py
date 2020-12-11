@@ -247,7 +247,7 @@ def find_file(file_path, scielo_pid_v2):
     except FileNotFoundError:
         return None
     else:
-        found = case_insensitive_find(basename, files)
+        found = find_similar_filename(basename, files)
         if found:
             found_file = os.path.join(dirname, found)
             logger.debug(
@@ -259,22 +259,30 @@ def find_file(file_path, scielo_pid_v2):
             return found_file
 
 
-def case_insensitive_find(word, words):
+def find_similar_filename(filename, files):
     """
     Obtém a palavra que seja mais similar possível dentre uma lista de palavras
     A palavra obtida deve ser do mesmo tamanho
     Mas pode ter variações entre maiúsculas e minúsculas
     """
-    if word in words:
-        return word
+    if filename in files:
+        return filename
 
-    _words = [w for w in words if len(w) == len(word)]
+    _filenames = [file for file in files if len(file) == len(filename)]
 
-    similar_items = difflib.get_close_matches(word, _words)
+    # Verifica dentro de palavras que mais se assemelham
+    similar_items = difflib.get_close_matches(filename, _filenames)
     for item in similar_items:
-        if item.upper() == word.upper():
+        if item.upper() == filename.upper():
             return item
 
-    for item in _words:
-        if item.upper() == word.upper():
+    # Verifica dentro de palavras sem a extensão do arquivo
+    original_file_root, __ = os.path.splitext(filename)
+    for file_root, file_ext in [os.path.splitext(item) for item in similar_items]:
+        if file_root.upper() == original_file_root.upper():
+            return f"{file_root}{file_ext}"
+
+    # Verifica dentro de palavras com o mesmo tamanho
+    for item in _filenames:
+        if item.upper() == filename.upper():
             return item

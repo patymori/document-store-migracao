@@ -339,40 +339,54 @@ class TestProcessingpack_PackingAssets(unittest.TestCase):
         self.assertEqual({"f01.gif", "f02.gif"}, set(os.listdir(pkg_path)))
 
 
-class TestCaseInsensitiveFind(unittest.TestCase):
+class TestFindSimilarFilename(unittest.TestCase):
 
-    def test_case_insensitive_find_returns_itself(self):
-        words = [
+    def test_find_similar_filename_returns_itself(self):
+        files = [
             "a18tab02M.gif", 'a18tab02m.gif', 'a18taB02m.gif',
         ]
         expected = "a18tab02M.gif"
-        result = packing.case_insensitive_find("a18tab02M.gif", words)
+        result = packing.find_similar_filename("a18tab02M.gif", files)
         self.assertEqual(expected, result)
 
-    def test_case_insensitive_find_returns_most_similar(self):
-        words = [
+    def test_find_similar_filename_returns_most_similar(self):
+        files = [
             "A18tab02M.gif", 'a18tab02m.gif',
         ]
         expected = "a18tab02m.gif"
-        result = packing.case_insensitive_find("a18tab02M.gif", words)
+        result = packing.find_similar_filename("a18tab02M.gif", files)
         self.assertEqual(expected, result)
 
-    def test_case_insensitive_find_returns_WEBANNEX(self):
-        words = ["WEBANNEx.pdf", "WEBANNEX.pdf", ]
+    def test_find_similar_filename_returns_WEBANNEX(self):
+        files = ["WEBANNEx.pdf", "WEBANNEX.pdf", ]
         expected = "WEBANNEx.pdf"
-        result = packing.case_insensitive_find("webannex.pdf", words)
+        result = packing.find_similar_filename("webannex.pdf", files)
         self.assertEqual(expected, result)
 
-    def test_case_insensitive_find_returns_lower_ext(self):
-        words = ["v32n1a05_1216_t1.jpg", "v32n1a05_1216_t2.JPG"]
+    def test_find_similar_filename_returns_lower_ext(self):
+        files = ["v32n1a05_1216_t1.jpg", "v32n1a05_1216_t2.JPG"]
         expected = "v32n1a05_1216_t1.jpg"
-        result = packing.case_insensitive_find("v32n1a05_1216_t1.JPG", words)
+        result = packing.find_similar_filename("v32n1a05_1216_t1.JPG", files)
         self.assertEqual(expected, result)
 
-    def test_case_insensitive_find_returns_none(self):
-        words = ["07t03.gif", "07t2.gif"]
+    def test_find_similar_filename_returns_same_filename_with_different_extention(self):
+        files = ["a18tab01m.gif", "a18tab02m.gif", "a18.pdf"]
+        expected = "a18tab02m.gif"
+        result = packing.find_similar_filename("a18tab02m.jpg", files)
+        self.assertEqual(expected, result)
+
+    def test_find_similar_filename_returns_similar_filename_with_different_extention(
+        self,
+    ):
+        files = ["a18tab01m.gif", "a18tab02m.gif", "a18.pdf"]
+        expected = "a18tab02m.gif"
+        result = packing.find_similar_filename("a18tab02M.jpg", files)
+        self.assertEqual(expected, result)
+
+    def test_find_similar_filename_returns_none(self):
+        files = ["07t03.gif", "07t2.gif"]
         expected = None
-        result = packing.case_insensitive_find("07t3.gif", words)
+        result = packing.find_similar_filename("07t3.gif", files)
         self.assertEqual(expected, result)
 
 
