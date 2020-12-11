@@ -220,6 +220,27 @@ class TestProcessingPackingGetAsset(unittest.TestCase):
         with open(self.dest_filename_img) as fp:
             self.assertTrue(fp.read(), b"conteudo img")
 
+    def test_get_asset_change_extention_if_read_file_is_different_from_dest_path_file(
+        self
+    ):
+        new_fname = "novo"
+        dest_path = TEMP_TEST_PATH
+        expected_file = pathlib.Path(dest_path) / f"{new_fname}.gif"
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            other_ext_filename = pathlib.Path(temp_dir) / "scielobr.gif"
+            other_ext_filename.write_bytes(b"conteudo img")
+            old_path = "/scielobr.jpg"
+
+            with patch.dict("os.environ", {"SOURCE_IMG_FILE": temp_dir}):
+                path = packing.get_asset(
+                    old_path, new_fname, dest_path, "S0101-0101202000100"
+                )
+
+            self.assertIsNone(path)
+            self.assertTrue(expected_file.is_file())
+            self.assertTrue(expected_file.read_bytes(), b"conteudo img")
+
     @patch("documentstore_migracao.utils.files.read_file_binary")
     def test_get_asset_in_pdf_folder(self, read_file_binary):
         read_file_binary.return_value = b"conteudo pdf"

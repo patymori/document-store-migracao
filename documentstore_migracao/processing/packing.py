@@ -174,6 +174,12 @@ def get_asset(old_path, new_fname, dest_path, scielo_pid_v2):
         ]:
             path = find_file(path, scielo_pid_v2)
             if path:
+                dest_path_file_root, dest_path_file_ext = os.path.splitext(
+                    dest_path_file
+                )
+                __, path_ext = os.path.splitext(path)
+                if dest_path_file_ext.upper() != path_ext.upper():
+                    dest_path_file = f"{dest_path_file_root}{path_ext}"
                 break
         content = files.read_file_binary(path)
     except (TypeError, FileNotFoundError, IOError):
