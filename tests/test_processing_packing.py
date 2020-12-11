@@ -392,6 +392,14 @@ class TestFindSimilarFilename(unittest.TestCase):
 
 class TestFindFile(unittest.TestCase):
 
+    def test_find_file_returns_file_path_if_giving_file_path_exists(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            test_file_path = pathlib.Path(temp_dir) / "a18tab02m.gif"
+            test_file_path.write_bytes(b"conteudo")
+
+            result = packing.find_file(str(test_file_path), "S0101-0101202000100")
+            self.assertEqual(str(test_file_path), result)
+
     @patch("documentstore_migracao.processing.packing.os.listdir")
     def test_find_file_a18tab02M(self, mock_listdir):
         mock_listdir.return_value = [
