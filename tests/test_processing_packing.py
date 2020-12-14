@@ -306,7 +306,7 @@ class TestProcessingpack_PackingAssets(unittest.TestCase):
         pkg_name = "pacote_sps"
 
         mk_read_file_binary.side_effect = [IOError("Error"), m.return_value]
-        result_path = packing.packing_assets(
+        result_path, __ = packing.packing_assets(
             asset_replacements, pkg_path, bad_pkg_path, pkg_name, "pid"
         )
         self.assertEqual(result_path, bad_pkg_path)
@@ -328,7 +328,7 @@ class TestProcessingpack_PackingAssets(unittest.TestCase):
         renamed_path = pkg_path + "_INCOMPLETE"
         pkg_name = "pacote_sps"
         mk_read_file_binary.side_effect = [IOError("Error"), m.return_value]
-        result_path = packing.packing_assets(
+        result_path, __ = packing.packing_assets(
             asset_replacements, pkg_path, bad_pkg_path, pkg_name, "pid"
         )
         self.assertEqual(result_path, renamed_path)
@@ -352,7 +352,7 @@ class TestProcessingpack_PackingAssets(unittest.TestCase):
         bad_pkg_path = self.bad_pkg_path
         pkg_name = "pacote_sps"
         mk_read_file_binary.side_effect = [mk_read_file_binary_result1.return_value, mk_read_file_binary_result2.return_value]
-        result_path = packing.packing_assets(
+        result_path, __ = packing.packing_assets(
             asset_replacements, pkg_path, bad_pkg_path, pkg_name, "pid"
         )
         self.assertEqual(result_path, pkg_path)

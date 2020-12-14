@@ -136,7 +136,9 @@ def pack_article_ALLxml():
 
 def get_asset(old_path, new_fname, dest_path, scielo_pid_v2):
     """Obtém os ativos digitais no sistema de arquivo e realiza a persistência
-    no ``dest_path``.
+    no ``dest_path``. Caso o ativo digital encontrado não tenha a mesma extensão do
+    arquivo originalmente buscado, é necessário salvá-lo com a extensão encontrada e
+    retornar o arquivo
 
     Args:
         old_path: Caminho do ativo
@@ -145,7 +147,8 @@ def get_asset(old_path, new_fname, dest_path, scielo_pid_v2):
         scielo_pid_v2: PID v2 do documento que o ativo digital está referenciado
 
     Retornos:
-        Sem retornos.
+        Tupla com old_path e new_fname atualizado
+        None - caso .
 
         Persiste o ativo no ``dest_path``
 
@@ -167,6 +170,7 @@ def get_asset(old_path, new_fname, dest_path, scielo_pid_v2):
         logger.debug("Arquivo já armazenado na pasta de destino: %s", dest_path_file)
         return
 
+    
     try:
         for path in [
             os.path.join(config.get('SOURCE_IMG_FILE'), asset_path),
@@ -191,7 +195,8 @@ def get_asset(old_path, new_fname, dest_path, scielo_pid_v2):
 def packing_assets(asset_replacements, pkg_path, incomplete_pkg_path, pkg_name,
                    scielo_pid_v2):
     """Tem a responsabilidade de ``empacotar`` os ativos digitais e retorna o
-    path do pacote.
+    path do pacote. Caso haja alteração na obteção de ativos digitais com relação
+    ao tipo do arquivo, retorna lista de pares do arquivo referenciado e a alteração.
 
     Args:
         asset_replacements: lista com os ativos
@@ -201,7 +206,8 @@ def packing_assets(asset_replacements, pkg_path, incomplete_pkg_path, pkg_name,
         scielo_pid_v2: PID v2
 
     Retornos:
-        retorna o caminho ``pkg_path`` ou incomplete_pkg_path
+        retorna o caminho ``pkg_path`` ou incomplete_pkg_path e lista de nomes de
+        arquivos de ativos digitais a serem atualizados
 
     Exceções:
         Não lança exceções.
@@ -210,6 +216,7 @@ def packing_assets(asset_replacements, pkg_path, incomplete_pkg_path, pkg_name,
     if not os.path.isdir(pkg_path):
         files.make_empty_dir(pkg_path)
 
+    changed_assets = []
     for old_path, new_fname in asset_replacements:
         try:
             get_asset(old_path, new_fname, pkg_path, scielo_pid_v2)
@@ -239,7 +246,7 @@ def packing_assets(asset_replacements, pkg_path, incomplete_pkg_path, pkg_name,
         error_messages = "\n".join(["%s %s %s" % _err for _err in errors])
         files.write_file(errors_filename, error_messages)
         return incomplete_pkg_path
-    return pkg_path
+    return pkg_path, changed_assets
 
 
 def find_file(file_path, scielo_pid_v2):
